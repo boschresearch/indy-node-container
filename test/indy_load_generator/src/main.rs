@@ -9,11 +9,12 @@ use indy_vdr::utils::keys::VerKey;
 use log::info;
 use rand::{distributions::Alphanumeric, Rng};
 use serde_json::Value;
+use std::{thread, time};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 pub struct Args {
-    /// Pool transaction genesis filename
+    /// Seed to sign transactions with
     #[clap(
         short = 's',
         long = "seed",
@@ -25,19 +26,19 @@ pub struct Args {
     #[clap(
         short = 'g',
         long = "genesis",
-        default_value = "./pool_transactions_genesis.json"
+        default_value = "/pool_transactions_genesis"
     )]
     genesis_file: String,
 }
 
 pub fn generate_seed() -> String {
-        rand::thread_rng()
-            .sample_iter(&Alphanumeric)
-            .take(32)
-            .collect()
+    rand::thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(32)
+        .collect()
 }
 
-pub fn long_did(did: ShortDidValue, verkey: VerKey) -> DidValue {
+pub fn long_did(did: &ShortDidValue, verkey: &VerKey) -> DidValue {
     return did.qualify(Option::from(verkey.to_string()));
 }
 
@@ -82,31 +83,39 @@ fn main() {
     }
 
     let builder = pool.get_request_builder();
-
-    // Create random Seed
-    let seed: String = generate_seed();
-    let (did, _, verkey) = did::generate_did(Option::from(seed.as_bytes())).unwrap();
-    // Create nym request from seed
-    let mut req = builder
-        .build_nym_request(
-            &long_did(trustee_did, trustee_ver_key),
-            &long_did(did, verkey.to_owned()),
-            Option::from(verkey.to_string()),
-            None,
-            None,
-            None,
-            None,
+    loop {
+        // Create random Seed
+        let seed: String = generate_seed();
+        let (did, _, verkey) = did::generate_did(Option::from(seed.as_bytes())).unwrap();
+        // Create nym request from seed
+        let mut req = builder
+            .build_nym_request(
+                &long_did(&trustee_did, &trustee_ver_key),
+                &long_did(&did, &verkey),
+                Option::from(verkey.to_string()),
+                None,
+                None,
+                None,
+                None,
+            )
+            .unwrap();
+        req.set_signature(
+            trustee_pkey
+                .sign(req.get_signature_input().unwrap().as_bytes())
+                .unwrap()
+                .as_slice(),
         )
         .unwrap();
-    req.set_signature(trustee_pkey.sign(req.get_signature_input().unwrap().as_bytes()).unwrap().as_slice()).unwrap();
 
-    let (result, _timing) = block_on(perform_ledger_request(&pool, &req)).unwrap();
-    let result_data = match result {
-        RequestResult::Reply(data) => Ok(data),
-        RequestResult::Failed(error) => Err(error),
-    };
-    let v: Value = serde_json::from_str(result_data.unwrap().as_str()).unwrap();
-    info!("Got Raw Value: {}", v);
-    let data: &Value = &v["result"]["data"].to_owned();
-    info!("Got Value: {}", data);
+        let (result, _timing) = block_on(perform_ledger_request(&pool, &req)).unwrap();
+        let result_data = match result {
+            RequestResult::Reply(data) => Ok(data),
+            RequestResult::Failed(error) => Err(error),
+        };
+        let v: Value = serde_json::from_str(result_data.unwrap().as_str()).unwrap();
+        info!("Got Raw Value: {}", v);
+        let data: &Value = &v["result"]["data"].to_owned();
+        info!("Got Value: {}", data);
+        thread::sleep(time::Duration::from_millis(100));
+    }
 }

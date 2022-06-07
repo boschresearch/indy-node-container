@@ -193,25 +193,17 @@ services:
         ipv4_address: 10.133.133.14
 
   loadgenerator:
-    image: indy-load-generator
+    image: indy_load_generator
     build: 
-      context: ./indy-load-generator
-    container_name: indy-load-generator
-    command: 'bash -c ''sleep 10; ./scripts/start_webserver.sh;'''
-    environment:
-      - GENESIS_FILE=/var/lib/indy/$INDY_NETWORK_NAME/pool_transactions_genesis
-      - MAX_FETCH=50000
-      - RESYNC_TIME=120
-      - REGISTER_NEW_DIDS=True
-      - LEDGER_INSTANCE_NAME=Local Test Ledger
-      - WEB_ANALYTICS_SCRIPT=
-      - INFO_SITE_TEXT=Node Container @ GitHub
-      - INFO_SITE_URL=https://github.com/hyperledger/indy-node-container
+      context: ./indy_load_generator
+      dockerfile: ./Dockerfile
+    container_name: indy_load_generator
+    command: 'bash -c ''sleep 10; /app/indy_load_generator -g /pool_transactions_genesis -s 000000000000000000000000Trustee1'''
     networks:
       indy_node_container_test_network:
         ipv4_address: 10.133.133.15
     volumes:
-      - ./lib_indy:/var/lib/indy
+      - ./lib_indy/$INDY_NETWORK_NAME/pool_transactions_genesis:/pool_transactions_genesis
 
 networks:
   indy_node_container_test_network:

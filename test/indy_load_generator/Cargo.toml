@@ -1,5 +1,5 @@
 [package]
-name = "indy-load-generator"
+name = "indy_load_generator"
 authors = ["c2bo"]
 version = "0.1.0"
 edition = "2021"
