@@ -198,7 +198,7 @@ services:
       context: ./indy_load_generator
       dockerfile: ./Dockerfile
     container_name: indy_load_generator
-    command: 'bash -c ''sleep 10; /app/indy_load_generator -g /pool_transactions_genesis -s 000000000000000000000000Trustee1'''
+    command: 'bash -c ''sleep 10; RUST_LOG=info /app/indy_load_generator -g /pool_transactions_genesis -s 000000000000000000000000Trustee1'''
     networks:
       indy_node_container_test_network:
         ipv4_address: 10.133.133.15

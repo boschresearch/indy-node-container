@@ -5,11 +5,8 @@ use indy_vdr::pool::helpers::perform_ledger_request;
 use indy_vdr::pool::helpers::perform_refresh;
 use indy_vdr::pool::{Pool, PoolBuilder, PoolTransactions, RequestResult};
 use indy_vdr::utils::did;
-use indy_vdr::utils::keys::VerKey;
-use log::info;
+use log::{info, debug, error};
 use rand::{distributions::Alphanumeric, Rng};
-use serde_json::Value;
-use std::{thread, time};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -38,15 +35,15 @@ pub fn generate_seed() -> String {
         .collect()
 }
 
-pub fn long_did(did: &ShortDidValue, verkey: &VerKey) -> DidValue {
-    return did.qualify(Option::from(verkey.to_string()));
+pub fn long_did(did: &ShortDidValue) -> DidValue {
+    return did.qualify(Option::from("sov".to_owned()));
 }
 
 fn main() {
     let args = Args::parse();
     env_logger::init();
 
-    let (trustee_did, trustee_pkey, trustee_ver_key) =
+    let (trustee_did, trustee_pkey, _) =
         did::generate_did(Option::from(args.seed.as_bytes())).unwrap();
 
     // Initialize pool
@@ -90,11 +87,11 @@ fn main() {
         // Create nym request from seed
         let mut req = builder
             .build_nym_request(
-                &long_did(&trustee_did, &trustee_ver_key),
-                &long_did(&did, &verkey),
+                &long_did(&trustee_did),
+                &long_did(&did),
                 Option::from(verkey.to_string()),
                 None,
-                None,
+                Option::from("101".to_owned()),
                 None,
                 None,
             )
@@ -106,16 +103,16 @@ fn main() {
                 .as_slice(),
         )
         .unwrap();
+        debug!("Created request: {}", req.req_json);
 
-        let (result, _timing) = block_on(perform_ledger_request(&pool, &req)).unwrap();
-        let result_data = match result {
-            RequestResult::Reply(data) => Ok(data),
-            RequestResult::Failed(error) => Err(error),
-        };
-        let v: Value = serde_json::from_str(result_data.unwrap().as_str()).unwrap();
-        info!("Got Raw Value: {}", v);
-        let data: &Value = &v["result"]["data"].to_owned();
-        info!("Got Value: {}", data);
-        thread::sleep(time::Duration::from_millis(100));
+        let (res, _) = block_on(perform_ledger_request(&pool, &req)).unwrap();
+        match res {
+            RequestResult::Reply(data) => {
+                info!("Wrote nym {}: {}", &long_did(&did), data)
+            }
+            RequestResult::Failed(error) => {
+                error!("Could not write nym {}: {}", &long_did(&did), error)
+            }
+        }
     }
 }
