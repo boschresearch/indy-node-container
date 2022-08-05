@@ -1,22 +1,20 @@
 FROM rust:1.58-buster AS builder
 
 RUN USER=root cargo new --bin indy_load_generator
-WORKDIR /indy_load_generator
-RUN apt-get update && apt-get install -y libzmq3-dev cmake 
-COPY ./Cargo.lock ./Cargo.lock
-COPY ./Cargo.toml ./Cargo.toml
-RUN cargo build --release
+RUN apt-get update && apt-get install -y libzmq3-dev cmake
+WORKDIR /app/
 
-# Get dependencies
-RUN rm src/*.rs
-COPY ./src ./src
+# Install cargo about
+RUN cargo install --locked cargo-about
 
 # Build
-RUN rm ./target/release/deps/indy_load_generator*
+COPY Cargo.* ./
+COPY ./src ./src
 RUN cargo build --release
 
 # Check licenses and generate report
-RUN cargo install --locked cargo-about
+COPY ./about.* ./
+COPY ./LICENSE ./
 RUN cargo about generate about.hbs > licenses.html
 
 FROM debian:buster-slim
@@ -26,6 +24,7 @@ RUN apt-get update && apt-get install ca-certificates -y && rm -rf /var/lib/apt/
 RUN mkdir /app/
 COPY --from=builder /app/target/release/indy_load_generator /app/
 COPY --from=builder /app/licenses.html /app/
+COPY --from=builder /app/LICENSE /app/
 ENV RUST_LOG=info
 
 WORKDIR /app

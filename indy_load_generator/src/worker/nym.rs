@@ -19,6 +19,7 @@ pub fn long_did(did: &ShortDidValue) -> DidValue {
 pub fn generate_seed() -> String {
     rand::thread_rng()
         .sample_iter(&Alphanumeric)
+        .map(char::from)
         .take(32)
         .collect()
 }
