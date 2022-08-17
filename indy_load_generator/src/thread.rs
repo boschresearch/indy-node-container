@@ -1,11 +1,15 @@
+// Copyright (c) 2022 - for information on the respective copyright owner see the NOTICE file or the repository https://github.com/hyperledger/indy-node-container.
+//
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::worker::worker::IndyWorker;
 use futures::channel::mpsc::{channel, Receiver, Sender};
+use futures::SinkExt;
 use futures_executor::block_on;
 use std::error::Error;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::thread::JoinHandle;
-use futures::SinkExt;
 
 pub enum Message {
     Exit,

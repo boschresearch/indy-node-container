@@ -11,14 +11,13 @@ use indy_vdr::utils::did::DidValue;
 use std::collections::HashSet;
 
 // Static attributes for every schema
-static ATTRIBUTES: &'static [&str] = &["name", "attr1", "attr2", "attr3", "attr4"];
+static ATTRIBUTES: &'static [&str] = &["name", "email", "attr1", "attr2", "attr3", "attr4"];
 
 // Create unsigned NYM Transaction
 pub fn generate_tx_schema(
     builder: &RequestBuilder,
     did: &DidValue,
 ) -> VdrResult<(PreparedRequest, SchemaV1)> {
-    // Create nym request from seed
     let version = "0.1.0";
     let name = "TestSchema";
     let mut attributes = HashSet::new();

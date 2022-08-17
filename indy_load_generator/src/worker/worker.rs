@@ -159,8 +159,11 @@ impl IndyWorker {
         return write;
     }
 
+    // TODO: writing/reading should probably run on different threads
     fn read_loop(&mut self, info: &WriteInformation) {
-        for x in 1..self.read_ratio {}
+        for x in 1..self.read_ratio {
+
+        }
     }
 
     async fn write_and_read(&mut self) {

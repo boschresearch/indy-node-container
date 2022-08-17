@@ -37,11 +37,9 @@ pub fn generate_tx_nym(
     let tx = builder.build_nym_request(
         trustee_did,
         &qualified_did,
-        Option::from(ver_key.to_string()),
+        Some(ver_key.to_string()),
         None,
-        Option::from("101".to_owned()),
-        None,
-        None,
+        Some("101".to_owned()),
     )?;
 
     Ok((tx, qualified_did, private_key, ver_key))
