@@ -2,7 +2,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+mod cred_def;
 mod nym;
+mod rev_reg;
 mod schema;
 pub(crate) mod worker;
-

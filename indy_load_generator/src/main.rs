@@ -10,10 +10,10 @@ use clap::Parser;
 use env_logger;
 use log::{error, info};
 use num_cpus;
-use std::thread::JoinHandle;
-use std::time::{Instant};
-use signal_hook::{iterator::Signals};
 use signal_hook::consts::{SIGINT, SIGKILL, SIGTERM};
+use signal_hook::iterator::Signals;
+use std::thread::JoinHandle;
+use std::time::Instant;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -44,7 +44,11 @@ pub struct Args {
 
     /// Reads per write, Not yet implemented
     #[clap(short = 'r', long = "reads", default_value_t = 0)]
-    reads: i8,
+    reads: u32,
+
+    /// revocation entries per revocation registry
+    #[clap(short = 'e', long = "entries", default_value_t = 10)]
+    revocation_entries: u32,
 }
 
 fn main() {
@@ -63,7 +67,13 @@ fn main() {
         let genesis_path = genesis_path.to_owned();
 
         info!("Spawning worker {}", name);
-        let worker = ThreadedWorker::new(seed, genesis_path, name, args.reads);
+        let worker = ThreadedWorker::new(
+            seed,
+            genesis_path,
+            name,
+            args.reads,
+            args.revocation_entries,
+        );
         match worker {
             Ok(mut worker) => {
                 worker.start();
@@ -76,7 +86,7 @@ fn main() {
     }
 
     info!("All workers spawned");
-    let time_start= Instant::now();
+    let time_start = Instant::now();
     // Time-based timeout
     if args.duration.is_some() {
         let timeout = args.duration.unwrap_or_default();
@@ -87,7 +97,10 @@ fn main() {
         // Gracious shutdown
         let mut signals = Signals::new(&[SIGTERM, SIGINT]).unwrap();
         for sig in signals.forever() {
-            info!("Received shutdown Signal {}, terminating threads.", sig.to_string());
+            info!(
+                "Received shutdown Signal {}, terminating threads.",
+                sig.to_string()
+            );
             break;
         }
     }

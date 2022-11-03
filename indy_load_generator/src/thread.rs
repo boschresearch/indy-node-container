@@ -29,9 +29,10 @@ impl ThreadedWorker {
         seed: String,
         genesis_path: String,
         id: String,
-        reads: i8,
+        reads: u32,
+        revocation_entries: u32,
     ) -> Result<ThreadedWorker, Box<dyn Error>> {
-        let worker = IndyWorker::new(seed, genesis_path, id, reads);
+        let worker = IndyWorker::new(seed, genesis_path, id, reads, revocation_entries);
         match worker {
             Err(err) => Err(err),
             Ok(worker) => Ok(ThreadedWorker {
